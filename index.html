@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quiz CIPA — Game Edition</title>
+
+<style>
+:root{
+  --accent:#ffcc00;
+  --accent-dark:#c48f00;
+  --card-bg: rgba(0,0,0,0.56);
+  --text:#fff;
+  --muted: rgba(255,255,255,0.85);
+  font-family:"Segoe UI",Roboto,Arial,sans-serif;
+}
+html,body{height:100%;margin:0;background:#000;color:var(--text);}
+
+/* 🔥 FUNDO ANIMADO (corrigido e responsivo) */
+body{
+  background-image:url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJz48cmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nIzAxMTFhZicvPjxjaXJjbGUgY3g9JzE1JyBjeT0nNzUnIHI9JzQnIGZpbGw9JyNmZjY2MDAnLz48Y2lyY2xlIGN4PSc1MCcgY3k9JzUwJyByPSc0JyBmaWxsPScjZjdiNjAwJy8+PHJlY3QgeD0nNjUnIHk9JzEwJyB3aWR0aD0nMTAnIGhlaWdodD0nNDAnIGZpbGw9JyMwMzA1MjAnLz48L3N2Zz4=");
+  background-repeat:repeat;
+  background-size:600px auto;
+  background-position:0 0;
+  animation:pan 24s linear infinite;
+}
+@keyframes pan{from{background-position:0 0;}to{background-position:-900px 0;}}
+
+/* container */
+.container{
+  max-width:960px;
+  margin:0 auto;
+  padding:16px;
+  width:100%;
+  box-sizing:border-box;
+}
+
+/* header */
+.header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.logo{
+  width:68px;height:68px;border-radius:12px;
+  background:linear-gradient(#fff,#eee);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:26px;color:#c0392b;
+  border:3px solid rgba(255,255,255,0.6);
+  box-shadow:0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* card */
+.card{
+  background:var(--card-bg);
+  padding:16px;
+  border-radius:14px;
+  backdrop-filter:blur(4px);
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  margin-top:18px;
+}
+
+/* inputs */
+.controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+input[type="text"],select{
+  padding:10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.06);
+  color:var(--text);
+  font-size:16px;
+}
+
+/* buttons */
+button.primary{
+  background:var(--accent);
+  border:none;
+  padding:12px 16px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
+  box-shadow:0 6px var(--accent-dark);
+  font-size:16px;
+}
+
+button.ghost{
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.14);
+  padding:10px 14px;
+  border-radius:8px;
+  color:var(--muted);
+  cursor:pointer;
+  font-size:15px;
+}
+
+/* quiz meta */
+.meta{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.progress{
+  height:10px;background:rgba(255,255,255,0.08);
+  border-radius:10px;overflow:hidden;flex:1;
+}
+.progress i{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,#ffb03b,#ffd76a);
+  display:block;
+}
+
+.question{font-size:20px;margin-top:12px;}
+
+/* choices */
+.choices{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+@media(max-width:650px){
+  .choices{grid-template-columns:1fr;}
+}
+
+.choice{
+  background:rgba(255,255,255,0.07);
+  padding:16px;
+  border-radius:10px;
+  min-height:60px;
+  border:1px solid transparent;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  font-size:16px;
+}
+
+.choice.disabled{opacity:0.6;cursor:default;}
+.choice.correct{background:rgba(34,197,94,0.20);border-color:rgba(34,197,94,0.40);}
+.choice.wrong{background:rgba(239,68,68,0.18);border-color:rgba(239,68,68,0.40);}
+
+.explain{
+  margin-top:12px;
+  background:rgba(255,255,255,0.05);
+  padding:12px;border-radius:8px;
+  font-size:15px;color:var(--muted);
+}
+
+/* mobile improvements */
+@media(max-width:480px){
+  .logo{width:54px;height:54px;font-size:22px;}
+  .question{font-size:18px;}
+  button.primary,button.ghost{width:100%;}
+  .meta{flex-direction:column;align-items:flex-start;}
+  .progress{width:100%;}
+}
+
+.footer{
+  margin-top:18px;text-align:center;
+  color:rgba(255,255,255,0.8);font-size:13px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<!-- =======================
+     LOBBY
+======================= -->
+<div class="header">
+  <div class="logo">Q</div>
+  <div>
+    <div class="title" style="font-size:22px;font-weight:700">Quiz CIPA — Game Edition</div>
+    <div style="font-size:13px;color:var(--muted)">15s por pergunta · Top 5 local · 10 perguntas por nível</div>
+  </div>
+</div>
+
+<div class="card" id="lobby">
+  <div class="controls">
+    <label>Nome</label>
+    <input id="playerName" type="text" value="Player" maxlength="24">
+
+    <label>Nível</label>
+    <select id="levelSelect">
+      <option value="easy">Fácil</option>
+      <option value="medium">Médio</option>
+      <option value="hard">Difícil</option>
+    </select>
+
+    <button class="primary" id="startBtn">Jogar</button>
+    <button class="ghost" id="rankBtn">Ver Ranking</button>
+    <button class="ghost" id="resetRank">Resetar Ranking</button>
+  </div>
+
+  <div style="margin-top:8px;font-size:13px;color:var(--muted)">
+    O jogo usa um beep curto como som. Ajuste seu volume se desejar.
+  </div>
+</div>
+
+<!-- =======================
+     QUIZ
+======================= -->
+<div class="card" id="quizArea" style="display:none">
+  <div class="meta">
+    <div>
+      <div class="score">Pontuação: <span id="score">0</span></div>
+      <div style="font-size:13px;color:var(--muted)">Pergunta <span id="qIndex">0</span>/10</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;width:100%;max-width:360px">
+      <div style="font-size:14px">Tempo</div>
+      <div class="progress"><i id="progressBar"></i></div>
+      <div id="timeLeft" style="min-width:48px;text-align:right">15s</div>
+    </div>
+  </div>
+
+  <div class="question" id="questionText">...</div>
+  <div class="choices" id="choicesContainer"></div>
+  <div class="explain hidden" id="explainBox"></div>
+
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <button class="ghost" id="nextBtn" style="display:none">Próxima</button>
+    <button class="ghost" id="quitBtn">Sair</button>
+  </div>
+</div>
+
+<!-- =======================
+     FIM
+======================= -->
+<div class="card" id="endArea" style="display:none">
+  <h3>Fim do jogo</h3>
+  <p>Sua pontuação: <strong id="finalScore">0</strong></p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="primary" id="playAgain">Jogar novamente</button>
+    <button class="ghost" id="showRankEnd">Ver ranking</button>
+  </div>
+</div>
+
+<!-- =======================
+     RANKING
+======================= -->
+<div class="card" id="rankingModal" style="display:none">
+  <h3>Ranking Top 5</h3>
+  <ol id="rankingList"></ol>
+  <button class="ghost" id="closeRank">Fechar</button>
+</div>
+
+<div class="footer">Desenvolvido — Perguntas de CIPA (uso educacional)</div>
+</div>
+
+<script>
+/* ================================
+   PERGUNTAS ORIGINAL + ORGANIZADAS
+================================ */
+
+const easy = [
+  {q:"O que significa CIPA?",choices:["Comissão Interna de Prevenção de Acidentes","Centro Integrado de Proteção Ambiental","Controle Interno de Procedimentos Administrativos"],a:0,explain:"CIPA = Comissão Interna de Prevenção de Acidentes."},
+  {q:"Qual o objetivo principal da CIPA?",choices:["Prevenir acidentes e doenças do trabalho","Gerir recursos humanos","Controlar jornada"],a:0,explain:"O objetivo é identificar riscos e propor medidas de prevenção."},
+  {q:"Quem participa da CIPA?",choices:["Representantes dos empregados e do empregador","Somente terceirizados","Apenas o RH"],a:0,explain:"A CIPA é formada por representantes eleitos e indicados."},
+  {q:"A CIPA atua em qual área?",choices:["Segurança e saúde no trabalho","Marketing","Financeiro"],a:0,explain:"A CIPA trabalha com prevenção e saúde ocupacional."},
+  {q:"O que é EPI?",choices:["Equipamento de Proteção Individual","Empresa de Proteção Interna","Estudo de Proteção Industrial"],a:0,explain:"EPI é Equipamento de Proteção Individual."},
+  {q:"Qual item é EPI?",choices:["Capacete","Mesa","Computador"],a:0,explain:"Capacete é EPI de proteção da cabeça."},
+  {q:"Mapa de riscos serve para:",choices:["Identificar riscos por setor","Decorar o ambiente","Controlar vendas"],a:0,explain:"Mapa de riscos identifica perigos do ambiente."},
+  {q:"Treinamentos de segurança devem ser:",choices:["Contínuos e registrados","Opcionais e esporádicos","Somente por e-mail"],a:0,explain:"Devem ser contínuos e devidamente registrados."},
+  {q:"Quem deve usar EPI?",choices:["O trabalhador exposto ao risco","Ninguém","Visitantes apenas"],a:0,explain:"Quem está exposto ao risco deve usar EPI."},
+  {q:"A sinalização de segurança serve para:",choices:["Orientar e alertar sobre riscos","Enfeitar","Substituir EPI"],a:0,explain:"Orienta sobre riscos, rotas e procedimentos."}
+];
+
+const medium = [
+  {q:"Qual Norma trata da CIPA?",choices:["NR-5","NR-6","NR-35"],a:0,explain:"NR-5 regula a CIPA."},
+  {q:"Duração do mandato da CIPA?",choices:["1 ano","2 anos","3 meses"],a:0,explain:"Mandato costuma ser de 1 ano."},
+  {q:"Quem designa representantes do empregador?",choices:["A empresa","O sindicato","Os empregados"],a:0,explain:"Indicação feita pela empresa."},
+  {q:"O que é PPRA?",choices:["Programa de Prevenção de Riscos Ambientais","Plano de Recursos Administrativos","Programa de Pagamento"],a:0,explain:"PPRA = prevenção de riscos ambientais."},
+  {q:"O que é LTCAT?",choices:["Laudo Técnico de Condições Ambientais","Livro Técnico de Acidentes","Lista de Controle"],a:0,explain:"Avalia agentes nocivos no ambiente."},
+  {q:"O que é APR?",choices:["Análise Preliminar de Risco","Avaliação Remota","Análise Receita"],a:0,explain:"APR identifica riscos antes da atividade."},
+  {q:"O que é CAT?",choices:["Comunicação de Acidente de Trabalho","Controle de Ativos","Certificado Técnico"],a:0,explain:"CAT comunica acidente ao INSS."},
+  {q:"EPC significa:",choices:["Equipamento de Proteção Coletiva","Equipe Civil","Estudo Preventivo"],a:0,explain:"Proteção coletiva do ambiente."},
+  {q:"Instrumento para medir ruído:",choices:["Decibelímetro","Termômetro","Anemômetro"],a:0,explain:"Decibelímetro mede pressão sonora."},
+  {q:"Quem investiga acidentes internamente?",choices:["CIPA e SESMT","Marketing","Financeiro"],a:0,explain:"CIPA + SESMT propõem melhorias."}
+];
+
+const hard = [
+  {q:"NR do trabalho em altura?",choices:["NR-35","NR-12","NR-6"],a:0,explain:"NR-35 trata do trabalho em altura."},
+  {q:"LTCAT caracteriza:",choices:["Agentes nocivos","Folha pagamento","Cargos"],a:0,explain:"Avalia agentes nocivos."},
+  {q:"O que é perícia?",choices:["Investigação técnica","Relatório financeiro","Reunião"],a:0,explain:"Busca causas e responsabilidades."},
+  {q:"NR de máquinas:",choices:["NR-12","NR-10","NR-17"],a:0,explain:"NR-12 trata de máquinas."},
+  {q:"Risco grave exige:",choices:["Medidas imediatas","Ignorar","Postar online"],a:0,explain:"Ação imediata."},
+  {q:"Quem assessora a CIPA?",choices:["SESMT","Financeiro","RH"],a:0,explain:"SESMT dá suporte técnico."},
+  {q:"Ficha de EPI registra:",choices:["Entrega e treinamento","Fabricante","Nada"],a:0,explain:"Entrega + treinamento."},
+  {q:"Princípio da precaução:",choices:["Previne mesmo com dúvida","Esperar provas","Afastar todos"],a:0,explain:"Prevenção mesmo sem certeza."},
+  {q:"Relatório de investigação contém:",choices:["Fatos, causas, medidas","Opiniões","Nada"],a:0,explain:"Fatos e medidas corretivas."},
+  {q:"Documento das condições ambientais:",choices:["LTCAT","CAT","PPRA"],a:0,explain:"LTCAT relata condições ambientais."}
+];
+
+/* =======================
+   ESTADO
+======================= */
+
+let state = {
+  level:"easy",
+  pool:[],
+  index:0,
+  score:0,
+  timer:null,
+  timeLeft:15,
+  player:"Player"
+};
+
+function $(id){ return document.getElementById(id); }
+function shuffle(a){ return a.sort(()=>Math.random()-.5); }
+
+/* =======================
+   SONS
+======================= */
+let audioCtx=null;
+function beep(freq=440,dur=120){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  gain.gain.value=0.05;
+  osc.frequency.value=freq;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); setTimeout(()=>osc.stop(),dur);
+}
+function playCorrect(){ beep(880,120); }
+function playWrong(){ beep(200,250); }
+function playTimeout(){ beep(480,200); }
+
+/* =======================
+   RANKING
+======================= */
+
+const RANK_KEY="cipa_quiz_rank_v1";
+
+function loadRank(){ try{return JSON.parse(localStorage.getItem(RANK_KEY))||[]}catch{return[];} }
+function saveRank(v){ localStorage.setItem(RANK_KEY,JSON.stringify(v)); }
+
+function showRankingModal(){
+  const list=loadRank();
+  const box=$("rankingList"); box.innerHTML="";
+  if(!list.length){ box.innerHTML="<li>Nenhum registro</li>"; }
+  else list.forEach((r,i)=>{
+    const li=document.createElement("li");
+    li.textContent=`${i+1}) ${r.name} — ${r.score} pts — ${new Date(r.when).toLocaleDateString()}`;
+    box.appendChild(li);
+  });
+  $("rankingModal").style.display="block";
+}
+
+/* =======================
+   GAME FLOW
+======================= */
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+  $("rankBtn").onclick=showRankingModal;
+  $("closeRank").onclick=()=>$("rankingModal").style.display="none";
+  $("resetRank").onclick=()=>{ if(confirm("Resetar ranking?")){ localStorage.removeItem(RANK_KEY); alert("Ranking apagado."); } };
+  
+  $("startBtn").onclick=()=>{
+    state.player=$("playerName").value.trim()||"Player";
+    startGame($("levelSelect").value);
+  };
+
+  $("nextBtn").onclick=()=>{
+    state.index++;
+    state.index>=state.pool.length? endGame() : showQuestion();
+  };
+
+  $("quitBtn").onclick=()=>{
+    stopTimer();
+    $("quizArea").style.display="none";
+    $("lobby").style.display="block";
+  };
+
+  $("playAgain").onclick=()=>{
+    $("endArea").style.display="none";
+    $("lobby").style.display="block";
+  };
+
+  $("showRankEnd").onclick=showRankingModal;
+
+});
+
+/* ============ GAME ============ */
+
+function startGame(level){
+  state.level=level;
+  state.index=0;
+  state.score=0;
+  $("score").textContent="0";
+  $("qIndex").textContent="0";
+
+  state.pool = shuffle(
+    level==="easy"? easy :
+    level==="medium"? medium :
+    hard
+  ).slice(0,10);
+
+  $("lobby").style.display="none";
+  $("quizArea").style.display="block";
+
+  showQuestion();
+}
+
+function showQuestion(){
+  const q=state.pool[state.index];
+  $("qIndex").textContent=state.index+1;
+  $("questionText").textContent=q.q;
+
+  const cont=$("choicesContainer");
+  cont.innerHTML="";
+
+  q.choices.forEach((txt,i)=>{
+    const div=document.createElement("div");
+    div.className="choice";
+    div.dataset.i=i;
+    div.innerHTML=`<strong>${String.fromCharCode(65+i)})</strong>&nbsp; ${txt}`;
+    div.onclick=onChoice;
+    cont.appendChild(div);
+  });
+
+  $("nextBtn").style.display="none";
+  $("explainBox").classList.add("hidden");
+  $("explainBox").textContent="";
+
+  state.timeLeft=15;
+  updateProgress();
+  updateTime();
+  startTimer();
+}
+
+function startTimer(){
+  stopTimer();
+  state.timer=setInterval(()=>{
+    state.timeLeft--;
+    updateTime();
+    if(state.timeLeft<=0){
+      stopTimer();
+      playTimeout();
+      reveal(null,"timeout");
+    }
+  },1000);
+}
+
+function stopTimer(){
+  if(state.timer){ clearInterval(state.timer); state.timer=null; }
+}
+
+function updateTime(){
+  $("timeLeft").textContent=state.timeLeft+"s";
+  updateProgress();
+}
+
+function updateProgress(){
+  $("progressBar").style.width=(state.timeLeft/15*100)+"%";
+}
+
+function onChoice(e){
+  stopTimer();
+  reveal(Number(e.currentTarget.dataset.i),"choice");
+}
+
+function reveal(chosen,mode){
+  const q=state.pool[state.index];
+  const correct=q.a;
+
+  document.querySelectorAll(".choice").forEach(el=>el.classList.add("disabled"));
+
+  const nodes=document.querySelectorAll(".choice");
+  nodes.forEach((n,i)=>{
+    if(i===correct) n.classList.add("correct");
+    if(mode==="choice" && i===chosen && chosen!==correct) n.classList.add("wrong");
+  });
+
+  const ex=$("explainBox");
+  if(mode==="choice" && chosen===correct){
+    state.score+=10;
+    $("score").textContent=state.score;
+    playCorrect();
+    ex.textContent="Correto! "+q.explain;
+  }
+  else if(mode==="timeout"){
+    ex.textContent="Tempo esgotado! Resposta: "+String.fromCharCode(65+correct)+". "+q.explain;
+  }
+  else{
+    playWrong();
+    ex.textContent="Errado. "+q.explain;
+  }
+
+  ex.classList.remove("hidden");
+  $("nextBtn").style.display="inline-block";
+}
+
+function endGame(){
+  stopTimer();
+  $("quizArea").style.display="none";
+  $("endArea").style.display="block";
+  $("finalScore").textContent=state.score;
+
+  const rank=loadRank();
+  rank.push({name:state.player,score:state.score,when:Date.now()});
+  rank.sort((a,b)=>b.score-a.score);
+  saveRank(rank.slice(0,5));
+
+  showRankingModal();
+}
+</script>
+</body>
+</html>
